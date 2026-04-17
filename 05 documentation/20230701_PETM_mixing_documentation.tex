@@ -1,0 +1,194 @@
+\documentclass{amsart}
+
+%import packages
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage[a4paper, left=2.5cm,right=2.5cm,bottom=3cm,top=3cm]{geometry}
+
+\title{PETM mixing model equations}
+\author{Jordon D. Hemingway}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+	%
+	Here, I write out the equations for Paleocene-Eocene Thermal Maximum (PETM) organic carbon mixing models. In these models, bulk (C/N ratio) and biomarker (branched-to-isoprenoid ratio, BIT; and terrestrial-to-aquatic ratio, TAR) metrics are used to linearly unmix algal, soil, and plant-derived organic carbon (OC) sources. I specifically outline the linear algebra equations to account for the fact that some metrics (BIT and TAR) only inform the relative contributions of two end members (soil vs. algal and plant vs. algal, respectively)---that is, they are insensitive to the third end member. This mixing model utilizes a non-negative least squares (nnls) algorithm and estimates uncertainty using a Monte Carlo approach that incorporates end-member uncertainty. Results include fractional contributions by each end member to each sample as well as best-fit end-member compositions, including uncertainty on all outputs.
+	%
+\end{abstract}
+
+%GENERAL MIXING MODEL APPROACH
+\section{General mixing model approach}\label{Sec:1}
+%
+The contributions of $n$ end members to a bulk sample can be constrained using $n-1$ conservative tracers, plus the ``sum-to-unity'' constraint,
+%
+\begin{equation}\label{Eq:1}
+	\sum_{j=1}^{n} f_j = 1,	
+\end{equation}
+%
+where $f_j$ is the fractional contribution of end-member $j$ and $j \in 1 \dots n$. This type of end-member mixing problem is classically written in matrix form as
+%
+\begin{equation}\label{Eq:2}
+	\begin{bmatrix}
+		a_{1,1} & a_{1,2} & \dots & a_{1,n} \\
+		\vdots & \vdots & \ddots & \vdots \\
+		a_{n-1,1} & a_{n-1,2} & \dots & a_{n-1,n} \\
+		1 & 1 & \dots & 1
+	\end{bmatrix}
+	%
+	\begin{bmatrix}
+		f_1 \\
+		\vdots \\
+		f_{n-1} \\
+		f_n
+	\end{bmatrix}
+	%
+	=
+	%
+	\begin{bmatrix}
+		b_{1} \\
+		\vdots \\
+		b_{n-1} \\
+		1 
+	\end{bmatrix},
+\end{equation}
+%
+where $a_{i,j}$ is the composition of conservative tracer $i$ that describes end member $j$---for example, the BIT value of the soil end member or the C/N ratio of the plant end member---and $b_i$ is the measured value of conservative tracer $i$ in a given sample. This is written more concisely as
+%
+\begin{equation}\label{Eq:3}
+	\bm{A}\bm{f} = \bm{b},
+\end{equation}
+%
+where $\bm{A}$ is the $n \times n$ ``design matrix'', $\bm{f}$ is the $n \times 1$ vector of fractional abundances, and $\bm{b}$ is the $n \times 1$ vector of measured tracer values. This approach can be expanded to solve for $f_i$ values of several samples simultaneously, assuming end-members for all samples are described by the same design matrix, as
+%
+\begin{equation}\label{Eq:4}
+	\bm{A}\bm{F} = \bm{B},
+\end{equation}
+%
+where
+%
+\begin{equation}\label{Eq:5}
+	\bm{F} = 
+	\begin{bmatrix} 
+		\bm{f}_1 & \bm{f}_2 & \dots & \bm{f}_m
+	\end{bmatrix}
+\end{equation}
+%
+is the $n \times m$ matrix of fractional contributions,
+%
+\begin{equation}\label{Eq:6}
+	\bm{B} = 
+	\begin{bmatrix} 
+		\bm{b}_1 & \bm{b}_2 & \dots & \bm{b}_m 
+	\end{bmatrix}
+\end{equation}
+%
+is the $n \times m$ matrix of measured tracer values, and $m$ is the number of samples.
+
+Assuming all $a_{i,j}$ and $b_{i,k}$ (where $k \in 1 \dots m$) values are known perfectly, $\bm{F}$ can be solved by simply multiplying $\bm{B}$ by $\bm{A}^{-1}$, the inverse of $\bm{A}$. In practice, this is instead solved using a non-negative least-squares approach, as the inversion approach is highly sensitive to noise. However, we first describe a method of overcoming the fact that some conservative tracers only inform the relative contributions of a subset of end members.
+
+%DEALING WITH PARTIAL-CONSTRAINT TRACERS
+\section{Dealing with partial-constraint tracers}\label{Sec:2}
+%
+Some conservative tracers used here are insensitive to the fractional contributions of some end members. For example, the BIT index is treated as a linear mixture of $f_\text{soil}$ and $f_\text{algal}$ only; it is insensitive to $f_\text{plant}$ values. This can be seen mathematically as
+%
+\begin{equation}\label{Eq:7}
+	\text{BIT}_\text{measured} = \text{BIT}_\text{soil} \left( \frac{f_\text{soil}}{f_\text{soil} + f_\text{algal}} \right) + \text{BIT}_\text{algal} \left( \frac{f_\text{algal}}{f_\text{soil} + f_\text{algal}} \right).
+\end{equation}
+%
+We must modify our model (Eqs. \ref{Eq:2}-\ref{Eq:4}) accordingly to deal with this fact. Specifically, Eq. \ref{Eq:7} can be re-written as
+
+\begin{equation}\label{Eq:8}
+	f_\text{soil} \left( \text{BIT}_\text{soil} - \text{BIT}_\text{measured} \right) + f_\text{algal} \left( \text{BIT}_\text{algal} - \text{BIT}_\text{measured} \right) = 0,
+\end{equation}
+%
+which is now a linear equation of $f_i$ values. Similarly subtracting all measured results from end-member values, we re-write Eq. \ref{Eq:2} as
+%
+\begin{equation}\label{Eq:9}
+	\begin{bmatrix}
+		(a_{1,1} - b_1) & (a_{1,2} - b_1) & \dots & (a_{1,n} - b_1) \\
+		\vdots & \vdots & \ddots & \vdots \\
+		(a_{n-1,1} - b_{n-1}) & (a_{n-1,2} - b_{n-1}) & \dots & (a_{n-1,n} - b_{n-1}) \\
+		1 & 1 & \dots & 1
+	\end{bmatrix}
+	%
+	\begin{bmatrix}
+		f_1 \\
+		\vdots \\
+		f_{n-1} \\
+		f_n
+	\end{bmatrix}
+	%
+	=
+	%
+	\begin{bmatrix}
+		0 \\
+		\vdots \\
+		0 \\
+		1 
+	\end{bmatrix},
+\end{equation}
+%
+where any $(a_{i,j} - b_i)$ entry is set to zero if tracer $i$ is insensitive to end member $j$ (e.g., $\text{BIT}_\text{plant} - \text{BIT}_\text{measured} \equiv 0$ since $\text{BIT}_\text{plant}$ does not exist). This can similarly be written more concisely as
+%
+\begin{equation}\label{Eq:10}
+	\bm{X} \bm{f} = \bm{z},
+\end{equation}
+%
+where $\bm{X} = \bm{A}-\bm{b}$ (with the exception of the final row, which remains all ones for the sum-to-unity constraint) and $\bm{z} = \left[ \bm{0} 1\right]^\text{T}$ is a vector of length $n$ of all zeros except for the final entry. This can again be expanded to solve for $f_i$ values of several samples simultaneously as
+
+\begin{equation}\label{Eq:11}
+	\begin{bmatrix}
+		\bm{X}_1 &  0 & \dots & 0\\
+		0 & \bm{X}_2  & \dots & 0\\
+		\vdots & \vdots & \ddots & \vdots \\
+		0 & 0 & \dots & \bm{X}_m
+	\end{bmatrix}
+	%
+	\begin{bmatrix}
+		\bm{f}_1 \\
+		\bm{f}_2 \\
+		\vdots \\
+		\bm{f}_m
+	\end{bmatrix}
+	%
+	=
+	%
+	\begin{bmatrix}
+		\bm{z} \\
+		\bm{z} \\
+		\vdots \\
+		\bm{z}
+	\end{bmatrix}.
+\end{equation}
+%
+Finally, we write this more concisely as
+%
+\begin{equation}\label{Eq:12}
+	\bm{Y} \bm{\phi} = \bm{\zeta},
+\end{equation}
+%
+where $\bm{Y}$ is an $(n \times m) \times (n \times m)$ diagonal block design matrix, $\bm{\phi}$ is a vector of length $n \times m$ containing all fractional contributions, and $\bm{\zeta}$ is a vector of length $n \times m$ containing $m$ entries of $\bm{z}$. Equation \ref{Eq:12} describes our model.
+
+Rather than solving directly by inverting $\bm{Y}$---which is highly sensitive to analytical noise and end-member uncertainty, as described above---we solve Eq. \ref{Eq:12} using a non-negative least squares approach. Specifically, we find the vector $\bm{\phi}$ that satisfies
+%
+\begin{equation}\label{Eq:13}
+	\min_{\bm{\phi}} \| \bm{\zeta} - \bm{Y} \bm{\phi} \|
+\end{equation}
+%
+subject to the constraint
+%
+\begin{equation}\label{Eq:14}
+	\phi_l \geq 0, \qquad l = 1, \dots, n \times m,
+\end{equation}
+%
+using the non-negative least squares algorithm as implemented in the SciPy package for Python. Equations \ref{Eq:13}-\ref{Eq:14} describe the model solution that minimizes the norm of the residual error (i.e., the RMSE, root mean square error) while fulfilling the constraints that each $\bm{f}_k$ is non-negative and sums to unity.
+
+%MONTE-CARLO UNCERTAINTY ESTIMATE
+\section{Monte Carlo uncertainty estimates}\label{Sec:3}
+%
+To account for uncertainty in prescribed end-member compositions---as well as in the sum-to-unity constraint---and to estimate uncertainty on each calculated fractional contribution, we solve our model in a Monte Carlo fashion. Specifically, we draw each $a_{i,j}$ value from a uniform distribution that encompasses the 90\% confidence interval of all measured values for a particular tracer of a particular end member. We additionally slightly relax the sum-to-unity constraint by adding random error, $\epsilon$, to each entry of the final row of each $\bm{X}_k$ design matrix. This approach allows for, e.g., small contributions by an additional, unidentified end member. Specifically, here we allow for 5\% error (i.e., $\epsilon \in \left( -0.05, 0.05 \right)$) drawn uniformly. We then solve Eqs. \ref{Eq:13}-\ref{Eq:14} and repeat this process 100,000 times.
+
+Ideally, Eqs. \ref{Eq:13}-\ref{Eq:14} will yield a perfect solution (i.e., RMSE = 0) for the case of $n$ end members and $n-1$ conservative tracers. However, if measured values are outside of the prescribed end-member range (e.g., if $\text{BIT}_\text{measured} > \textit{BIT}_\text{soil}$), then RMSE will be greater than zero. We therefore only retain the 1\% of solutions (i.e., 1,000 iterations) that yield the lowest RMSE values for all samples. In addition to providing an estimate of uncertainty on end-member contributions, this approach also allows us to estimate which range of measured end-member compositions best describes a given sample set.
+
+\end{document}
