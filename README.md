@@ -6,6 +6,7 @@ Three end-member mixing model for Inglis et al. Nature Geoscience 2026. This mix
 
 # Repository information:
 
+| ------- | ----------------------------- |
 | Author  | Jordon D. Hemingway           |
 | Date    | 17. April 2026                |
 | Contact | jordon.hemingway@eaps.ethz.ch |
