@@ -12,6 +12,8 @@ Three end-member mixing model for Inglis et al. Nature Geoscience 2026. This mix
 | Date    | 17. April 2026                |
 | Contact | jordon.hemingway@eaps.ethz.ch |
 | License | GNU GPL v3                    |
+| doi     | [![DOI](https://zenodo.org/badge/1213451443.svg)](https://doi.org/10.5281/zenodo.19630720) |
+
 
 ---
 
